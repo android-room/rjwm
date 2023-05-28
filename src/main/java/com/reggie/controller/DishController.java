@@ -171,4 +171,39 @@ public class DishController {
         }).collect(Collectors.toList());
         return R.success(dishDtoList);
     }
+
+    @PostMapping("/status/{sta}")
+    public R<String> status(@PathVariable int sta, Long[] ids){
+        log.info("sta{}",ids);
+        System.out.println(sta+"=="+ids);
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+        for (int i = 0; i <ids.length ; i++) {
+            Dish dish = new Dish();
+            dish.setId(ids[i]);
+            dish = dishService.getById(dish.getId());
+            queryWrapper.eq(Dish::getId,ids[i]);
+            if (sta == 1){
+                dish.setStatus(1);
+                dishService.updateById(dish);
+            }else if (sta == 0){
+                dish.setStatus(0);
+                dishService.updateById(dish);
+            }
+        }
+        return R.success("操作成功");
+    }
+
+    @DeleteMapping()
+    public R<String> Delete(Long[] ids){
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+        for (int i = 0; i <ids.length ; i++) {
+            Dish dish = new Dish();
+            dish.setId(ids[i]);
+            dish = dishService.getById(dish.getId());
+            queryWrapper.eq(Dish::getId,ids[i]);
+            dishService.removeById(dish);
+        }
+        return R.success("操作成功");
+    }
+
 }

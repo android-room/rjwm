@@ -15,4 +15,5 @@ public interface DishService extends IService<Dish> {
 
     //更新菜品信息和口味信息
     void updateWithFlavor(DishDto dishDto);
+
 }
