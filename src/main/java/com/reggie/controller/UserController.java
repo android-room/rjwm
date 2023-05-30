@@ -10,6 +10,8 @@ import com.reggie.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.mail.EmailException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/user")
@@ -26,6 +29,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedisTemplate redisTemplate;
 
 
     /**
@@ -48,8 +54,12 @@ public class UserController {
                 throw new CustomException("邮箱错误");
             }
             //需要将生成的验证码保存到Session
-            session.setAttribute("code",code);
-            session.setAttribute("phone",phone);
+//            session.setAttribute("code",code);
+//            session.setAttribute("phone",phone);
+
+            //将生成的验证码缓存到Redis中，并且设置有效期1分钟
+            redisTemplate.opsForValue().set(phone,code,1, TimeUnit.MINUTES);
+
             return R.success("验证码发送成功");
         }
 
@@ -74,7 +84,11 @@ public class UserController {
         System.out.println(code);
         System.out.println(session.getAttribute("code"));
         //从session中获取验证码
-        Object codeInSession = session.getAttribute("code");
+//        Object codeInSession = session.getAttribute("code");
+
+        //从redis中获取验证码
+        Object codeInSession = redisTemplate.opsForValue().get(phone);
+
 
         //进行验证码比对（提交页面的session）
         if (codeInSession != null && codeInSession.equals(code)){
@@ -90,6 +104,8 @@ public class UserController {
                 userService.save(user);
             }
             session.setAttribute("user",user.getId());
+            //如果登入成功，删除redis缓存的验证码
+            redisTemplate.delete(phone);
             return R.success(user);
         }
 
